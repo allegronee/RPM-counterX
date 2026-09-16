@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BeyPower X Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>BEYPOWER X</h1>
+            <div id="status" class="status-bar">Disconnesso</div>
+        </header>
+
+        <main>
+            <button id="connectBtn" class="primary-btn">CONNETTI LAUNCHER</button>
+
+            <div class="rpm-card">
+                <div id="rpmValue">0</div>
+                <div class="label">MAX RPM</div>
+            </div>
+
+            <div class="save-area">
+                <input type="text" id="noteInput" placeholder="Esempio: Dran Sword - Corda Nuova">
+                <button id="saveBtn" class="save-btn" disabled>SALVA RECORD</button>
+            </div>
+
+            <section class="history-section">
+                <h2>CRONOLOGIA LANCI</h2>
+                <div class="table-wrapper">
+                    <table id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>RPM</th>
+                                <th>Nota</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <button id="exportBtn" class="util-btn">Esporta JSON</button>
+            <button id="clearBtn" class="util-btn delete">Cancella Tutto</button>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
