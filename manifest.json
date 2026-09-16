@@ -1,0 +1,15 @@
+{
+  "short_name": "BeyPowerX",
+  "name": "BeyPower X RPM Counter",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1041/1041857.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#121212",
+  "background_color": "#121212"
+}
