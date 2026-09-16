@@ -1,0 +1,94 @@
+:root {
+    --bg: #121212;
+    --card: #1e1e1e;
+    --cyan: #00e5ff;
+    --green: #00e676;
+    --red: #ff3d00;
+    --text: #ffffff;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 450px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+h1 { text-align: center; color: var(--cyan); letter-spacing: 3px; font-size: 1.5rem; }
+
+.status-bar {
+    text-align: center;
+    font-size: 0.8rem;
+    padding: 5px;
+    border-radius: 10px;
+    background: #333;
+    margin-bottom: 20px;
+}
+
+.status-bar.connected { color: var(--green); border: 1px solid var(--green); }
+
+.primary-btn {
+    background: var(--cyan);
+    color: #000;
+    border: none;
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.rpm-card {
+    background: var(--card);
+    margin: 20px 0;
+    padding: 40px 20px;
+    border-radius: 20px;
+    text-align: center;
+    border: 2px solid #333;
+}
+
+#rpmValue { font-size: 4.5rem; font-weight: 900; color: var(--green); }
+.label { color: #888; letter-spacing: 2px; }
+
+.save-area input {
+    width: 100%;
+    background: #222;
+    border: 1px solid #444;
+    padding: 12px;
+    color: white;
+    border-radius: 10px;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+.save-btn {
+    background: var(--green);
+    border: none;
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.save-btn:disabled { opacity: 0.3; }
+
+.history-section { margin-top: 30px; }
+.table-wrapper { overflow-x: auto; background: var(--card); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; font-size: 0.85rem; }
+th { color: var(--cyan); }
+
+footer { margin-top: 30px; display: flex; gap: 10px; }
+.util-btn { flex: 1; background: #333; color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
+.util-btn.delete { color: var(--red); }
