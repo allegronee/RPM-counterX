@@ -3,50 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BeyPower X Tracker</title>
+    <title>RPMcounterX</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
+    <div class="glow-bg"></div>
     <div class="app-container">
         <header>
-            <h1>BEYPOWER X</h1>
-            <div id="status" class="status-bar">Disconnesso</div>
+            <div class="logo">RPMcounterX <span>X</span></div>
+            <div id="status" class="status-pill">DISCONNESSO</div>
         </header>
 
         <main>
-            <button id="connectBtn" class="primary-btn">CONNETTI LAUNCHER</button>
-
-            <div class="rpm-card">
-                <div id="rpmValue">0</div>
-                <div class="label">MAX RPM</div>
-            </div>
-
-            <div class="save-area">
-                <input type="text" id="noteInput" placeholder="Esempio: Dran Sword - Corda Nuova">
-                <button id="saveBtn" class="save-btn" disabled>SALVA RECORD</button>
-            </div>
-
-            <section class="history-section">
-                <h2>CRONOLOGIA LANCI</h2>
-                <div class="table-wrapper">
-                    <table id="historyTable">
-                        <thead>
-                            <tr>
-                                <th>RPM</th>
-                                <th>Nota</th>
-                                <th>Data</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+            <div class="power-gauge">
+                <div class="inner-circle">
+                    <div id="rpmValue">0</div>
+                    <div class="unit">MAX RPM</div>
                 </div>
+                <div class="progress-ring"></div>
+            </div>
+
+            <button id="connectBtn" class="btn-neon">
+                <span>CONNETTI LAUNCHER</span>
+            </button>
+
+            <div class="input-card">
+                <input type="text" id="noteInput" placeholder="NOME BEY O NOTA...">
+                <button id="saveBtn" class="btn-save" disabled>SALVA RECORD</button>
+            </div>
+
+            <section class="history-container">
+                <h3>CRONOLOGIA BATTAGLIE</h3>
+                <div id="historyList"></div>
             </section>
         </main>
 
         <footer>
-            <button id="exportBtn" class="util-btn">Esporta JSON</button>
-            <button id="clearBtn" class="util-btn delete">Cancella Tutto</button>
+            <button id="exportBtn" class="btn-ghost">ESPORTA</button>
+            <button id="clearBtn" class="btn-ghost danger">CANCELLA</button>
         </footer>
     </div>
     <script src="app.js"></script>
