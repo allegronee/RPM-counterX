@@ -1,94 +1,124 @@
 :root {
-    --bg: #121212;
-    --card: #1e1e1e;
-    --cyan: #00e5ff;
-    --green: #00e676;
-    --red: #ff3d00;
-    --text: #ffffff;
+    --cyan: #00f2ff;
+    --green: #00ff88;
+    --red: #ff0055;
+    --bg: #0a0b10;
+    --card: rgba(255, 255, 255, 0.05);
 }
 
 body {
     background-color: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: white;
+    font-family: 'Orbitron', sans-serif; /* Se vuoi un font tech, o usa sans-serif */
     margin: 0;
+    overflow-x: hidden;
     display: flex;
     justify-content: center;
 }
 
-.app-container {
-    width: 100%;
-    max-width: 450px;
-    padding: 20px;
-    box-sizing: border-box;
+/* Sfondo animato con bagliore */
+.glow-bg {
+    position: fixed;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(0,242,255,0.05) 0%, transparent 70%);
+    z-index: -1;
+    animation: pulseBg 8s infinite alternate;
 }
 
-h1 { text-align: center; color: var(--cyan); letter-spacing: 3px; font-size: 1.5rem; }
+@keyframes pulseBg { from { opacity: 0.5; } to { opacity: 1; } }
 
-.status-bar {
-    text-align: center;
-    font-size: 0.8rem;
-    padding: 5px;
-    border-radius: 10px;
-    background: #333;
-    margin-bottom: 20px;
+.app-container { width: 100%; max-width: 400px; padding: 25px; box-sizing: border-box; }
+
+.logo { font-size: 1.8rem; font-weight: 900; text-align: center; letter-spacing: 4px; margin-bottom: 5px; }
+.logo span { color: var(--cyan); text-shadow: 0 0 15px var(--cyan); }
+
+.status-pill {
+    background: #1a1a1a;
+    font-size: 0.7rem;
+    padding: 4px 12px;
+    border-radius: 50px;
+    width: fit-content;
+    margin: 0 auto 30px;
+    border: 1px solid #333;
+    transition: 0.3s;
+}
+.status-pill.connected { border-color: var(--green); color: var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.3); }
+
+/* Il quadrante della potenza */
+.power-gauge {
+    position: relative;
+    width: 220px; height: 220px;
+    margin: 0 auto 30px;
+    background: var(--card);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid #1a1a1a;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
 }
 
-.status-bar.connected { color: var(--green); border: 1px solid var(--green); }
+.inner-circle { text-align: center; }
+#rpmValue { font-size: 3.5rem; font-weight: 900; color: var(--green); text-shadow: 0 0 20px rgba(0,255,136,0.5); line-height: 1; }
+.unit { font-size: 0.8rem; color: #888; margin-top: 5px; letter-spacing: 2px; }
 
-.primary-btn {
-    background: var(--cyan);
-    color: #000;
-    border: none;
-    width: 100%;
+/* Pulsante Neon */
+.btn-neon {
+    background: transparent;
+    border: 2px solid var(--cyan);
+    color: var(--cyan);
     padding: 15px;
+    width: 100%;
     border-radius: 12px;
     font-weight: bold;
-    font-size: 1rem;
     cursor: pointer;
+    box-shadow: 0 0 15px rgba(0,242,255,0.2);
+    transition: 0.3s;
 }
+.btn-neon:active { transform: scale(0.98); background: var(--cyan); color: black; }
 
-.rpm-card {
+/* Card inserimento */
+.input-card {
     background: var(--card);
-    margin: 20px 0;
-    padding: 40px 20px;
-    border-radius: 20px;
-    text-align: center;
-    border: 2px solid #333;
+    padding: 15px;
+    border-radius: 15px;
+    margin-top: 20px;
+    backdrop-filter: blur(10px);
 }
-
-#rpmValue { font-size: 4.5rem; font-weight: 900; color: var(--green); }
-.label { color: #888; letter-spacing: 2px; }
-
-.save-area input {
+.input-card input {
     width: 100%;
-    background: #222;
-    border: 1px solid #444;
-    padding: 12px;
-    color: white;
-    border-radius: 10px;
-    box-sizing: border-box;
-    margin-bottom: 10px;
-}
-
-.save-btn {
-    background: var(--green);
+    background: transparent;
     border: none;
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
+    border-bottom: 1px solid #444;
+    padding: 10px;
+    color: white;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+.btn-save {
+    background: var(--green);
+    border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold;
 }
 
-.save-btn:disabled { opacity: 0.3; }
+/* Lista Storico */
+.history-container { margin-top: 30px; }
+.history-item {
+    background: var(--card);
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 4px solid var(--cyan);
+    animation: slideIn 0.4s ease-out;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } }
 
-.history-section { margin-top: 30px; }
-.table-wrapper { overflow-x: auto; background: var(--card); border-radius: 10px; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; font-size: 0.85rem; }
-th { color: var(--cyan); }
+.h-rpm { font-size: 1.4rem; font-weight: bold; color: var(--green); }
+.h-info { text-align: right; }
+.h-note { font-size: 0.9rem; color: white; display: block; }
+.h-date { font-size: 0.7rem; color: #666; }
 
-footer { margin-top: 30px; display: flex; gap: 10px; }
-.util-btn { flex: 1; background: #333; color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
-.util-btn.delete { color: var(--red); }
+.btn-ghost { background: transparent; border: 1px solid #333; color: #666; padding: 8px; flex: 1; border-radius: 8px; }
+.danger { color: var(--red); }
