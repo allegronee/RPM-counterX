@@ -1,25 +1,19 @@
 /*
- * RPMcounterX - ESP32-C3 SuperMini + QRE1113 + BLE
+ * RPMcounterX - ESP32-C3 SuperMini + QRE1113 + BLE/USB
  *
- * Hardware:
- *   QRE1113 VCC -> 3V3
- *   QRE1113 GND -> GND
- *   QRE1113 OUT -> GPIO3
+ * QRE1113 OUT -> GPIO3
+ * Half white / half black disk: one FALLING edge = one revolution.
  *
- * The optical disk is half white / half black.
- * One FALLING edge = one complete revolution.
+ * Measurement optimized for high-speed Beyblade X launches.
+ * Reference: ~24,000 RPM strong launches.
+ * 24,000 RPM = 2,500 us/revolution.
  *
- * BLE protocol used by the GitHub Pages app:
- *   Device:  Beyblade RPM
- *   Service: 12345678-1234-1234-1234-1234567890ab
- *   RPM:     12345678-1234-1234-1234-1234567890ac (Notify)
- *   Command: 12345678-1234-1234-1234-1234567890ad (Write)
- *
- * Notification format:
- *   RPM:12345,MAX:12345
- *
- * Command accepted:
- *   RESET
+ * The algorithm uses:
+ * - minimum period validation
+ * - median filter to reject isolated bad readings
+ * - short rolling average for stable RPM
+ * - fast response during acceleration
+ * - timeout to zero when the Bey stops
  */
 
 #include <Arduino.h>
@@ -34,32 +28,32 @@
 #define RPM_UUID      "12345678-1234-1234-1234-1234567890ac"
 #define COMMAND_UUID  "12345678-1234-1234-1234-1234567890ad"
 
-// Reject impossible edges/noise shorter than this interval.
-// 250 us corresponds to a theoretical maximum of 240,000 RPM.
-// Increase to 500-1000 us if the real launcher produces noise.
-const uint32_t MIN_PULSE_US = 250;
+// Measurement limits.
+// 40,000 RPM -> 1,500 us/revolution.
+// We deliberately allow up to 100,000 RPM to avoid clipping real data.
+const uint32_t MIN_PERIOD_US = 600;
+const uint32_t MAX_PERIOD_US = 3000000;
 
-// If no valid edge arrives for this long, report 0 RPM.
-const uint32_t STOP_TIMEOUT_US = 250000;
+// No valid edge for 180 ms = Bey stopped.
+const uint32_t STOP_TIMEOUT_US = 180000;
 
-// Number of complete revolutions used for a rolling RPM average.
-const uint8_t AVERAGE_SAMPLES = 4;
+// Number of recent periods used by the robust filter.
+const uint8_t FILTER_SAMPLES = 5;
 
-// BLE notification period.
-const uint32_t BLE_UPDATE_MS = 100;
+// Send data to BLE/USB every 50 ms.
+const uint32_t UPDATE_MS = 50;
 
 BLECharacteristic* rpmCharacteristic = nullptr;
 BLECharacteristic* commandCharacteristic = nullptr;
 
-volatile uint32_t lastEdgeUs = 0;
-volatile uint32_t periodsUs[AVERAGE_SAMPLES] = {0};
+volatile uint32_t periodsUs[FILTER_SAMPLES] = {0};
 volatile uint8_t periodIndex = 0;
 volatile uint8_t periodCount = 0;
-volatile bool newMeasurement = false;
+volatile uint32_t lastEdgeUs = 0;
 
 uint32_t currentRpm = 0;
 uint32_t maxRpm = 0;
-uint32_t lastBleUpdate = 0;
+uint32_t lastUpdateMs = 0;
 
 class ServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer* server) override {
@@ -70,7 +64,6 @@ class ServerCallbacks : public BLEServerCallbacks {
     Serial.println("BLE client disconnesso");
     delay(50);
     server->getAdvertising()->start();
-    Serial.println("Advertising BLE riavviato");
   }
 };
 
@@ -79,9 +72,6 @@ class CommandCallbacks : public BLECharacteristicCallbacks {
     String command = characteristic->getValue();
     command.trim();
     command.toUpperCase();
-
-    Serial.print("Comando BLE: ");
-    Serial.println(command);
 
     if (command == "RESET") {
       maxRpm = 0;
@@ -100,31 +90,41 @@ void ARDUINO_ISR_ATTR onSensorEdge() {
 
   const uint32_t period = now - lastEdgeUs;
 
-  if (period < MIN_PULSE_US) {
+  // Ignore impossible/noise pulses without moving the reference edge.
+  if (period < MIN_PERIOD_US || period > MAX_PERIOD_US) {
     return;
   }
 
   lastEdgeUs = now;
-
   periodsUs[periodIndex] = period;
-  periodIndex = (periodIndex + 1) % AVERAGE_SAMPLES;
+  periodIndex = (periodIndex + 1) % FILTER_SAMPLES;
 
-  if (periodCount < AVERAGE_SAMPLES) {
+  if (periodCount < FILTER_SAMPLES) {
     periodCount++;
   }
+}
 
-  newMeasurement = true;
+uint32_t median5(uint32_t values[], uint8_t count) {
+  // Small insertion sort; max 5 elements.
+  for (uint8_t i = 1; i < count; i++) {
+    uint32_t key = values[i];
+    int8_t j = i - 1;
+    while (j >= 0 && values[j] > key) {
+      values[j + 1] = values[j];
+      j--;
+    }
+    values[j + 1] = key;
+  }
+  return values[count / 2];
 }
 
 uint32_t calculateRpm() {
   noInterrupts();
   uint8_t count = periodCount;
-  uint32_t periods[AVERAGE_SAMPLES];
-
-  for (uint8_t i = 0; i < AVERAGE_SAMPLES; i++) {
-    periods[i] = periodsUs[i];
+  uint32_t samples[FILTER_SAMPLES];
+  for (uint8_t i = 0; i < FILTER_SAMPLES; i++) {
+    samples[i] = periodsUs[i];
   }
-
   uint32_t lastEdge = lastEdgeUs;
   interrupts();
 
@@ -132,43 +132,63 @@ uint32_t calculateRpm() {
     return 0;
   }
 
-  if ((micros() - lastEdge) > STOP_TIMEOUT_US) {
+  if ((uint32_t)(micros() - lastEdge) > STOP_TIMEOUT_US) {
     return 0;
   }
 
-  uint64_t sum = 0;
-  uint8_t valid = 0;
-
+  // First reject old/empty entries.
+  uint32_t valid[FILTER_SAMPLES];
+  uint8_t validCount = 0;
   for (uint8_t i = 0; i < count; i++) {
-    if (periods[i] > 0) {
-      sum += periods[i];
-      valid++;
+    if (samples[i] >= MIN_PERIOD_US && samples[i] <= MAX_PERIOD_US) {
+      valid[validCount++] = samples[i];
     }
   }
 
-  if (valid == 0) {
+  if (validCount == 0) {
     return 0;
   }
 
-  const uint32_t averagePeriod = sum / valid;
+  // Median rejects a single bad optical reading very effectively.
+  uint32_t medianPeriod = median5(valid, validCount);
+
+  // Use only samples close to the median for the final average.
+  // This prevents one erroneous period from shifting the RPM.
+  uint64_t sum = 0;
+  uint8_t accepted = 0;
+
+  for (uint8_t i = 0; i < validCount; i++) {
+    uint32_t p = valid[i];
+    uint32_t difference = (p > medianPeriod) ? (p - medianPeriod) : (medianPeriod - p);
+
+    // Accept readings within +/- 25% of the median.
+    if ((uint64_t)difference * 4ULL <= (uint64_t)medianPeriod) {
+      sum += p;
+      accepted++;
+    }
+  }
+
+  if (accepted == 0) {
+    return 60000000UL / medianPeriod;
+  }
+
+  uint32_t averagePeriod = (uint32_t)(sum / accepted);
   if (averagePeriod == 0) {
     return 0;
   }
 
-  // One FALLING edge = one revolution.
-  return (uint32_t)(60000000ULL / averagePeriod);
+  return 60000000UL / averagePeriod;
 }
 
-void resetMeasurementWindow() {
+void resetMeasurement() {
   noInterrupts();
-  periodCount = 0;
   periodIndex = 0;
+  periodCount = 0;
   lastEdgeUs = 0;
-  for (uint8_t i = 0; i < AVERAGE_SAMPLES; i++) {
+  for (uint8_t i = 0; i < FILTER_SAMPLES; i++) {
     periodsUs[i] = 0;
   }
   interrupts();
-
   currentRpm = 0;
 }
 
@@ -201,8 +221,6 @@ void setupBle() {
   advertising->setMinPreferred(0x06);
   advertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
-
-  Serial.println("BLE pronto: Beyblade RPM");
 }
 
 void setup() {
@@ -214,11 +232,10 @@ void setup() {
 
   setupBle();
 
-  Serial.println();
-  Serial.println("=== RPMcounterX ===");
-  Serial.println("Sensore: QRE1113");
-  Serial.println("GPIO: 3");
-  Serial.println("Un FALLING = un giro");
+  Serial.println("=== RPMcounterX HIGH SPEED ===");
+  Serial.println("QRE1113 -> GPIO3");
+  Serial.println("1 FALLING = 1 giro");
+  Serial.println("Target: 0-40000+ RPM");
   Serial.println("Pronto!");
 }
 
@@ -230,9 +247,8 @@ void loop() {
   }
 
   const uint32_t nowMs = millis();
-
-  if (nowMs - lastBleUpdate >= BLE_UPDATE_MS) {
-    lastBleUpdate = nowMs;
+  if (nowMs - lastUpdateMs >= UPDATE_MS) {
+    lastUpdateMs = nowMs;
 
     char payload[48];
     snprintf(payload, sizeof(payload), "RPM:%lu,MAX:%lu",
@@ -241,9 +257,8 @@ void loop() {
 
     rpmCharacteristic->setValue(payload);
     rpmCharacteristic->notify();
-
     Serial.println(payload);
   }
 
-  delay(2);
+  delay(1);
 }
