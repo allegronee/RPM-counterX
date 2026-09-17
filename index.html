@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0b10">
+    <meta name="description" content="Beyblade X RPM Counter via ESP32-C3 BLE">
     <title>RPMcounterX</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
@@ -11,31 +13,39 @@
     <div class="glow-bg"></div>
     <div class="app-container">
         <header>
-            <div class="logo">RPMcounterX <span>X</span></div>
+            <div class="logo">RPMcounter<span>X</span></div>
             <div id="status" class="status-pill">DISCONNESSO</div>
         </header>
 
         <main>
-            <div class="power-gauge">
-                <div class="inner-circle">
-                    <div id="rpmValue">0</div>
-                    <div class="unit">MAX RPM</div>
+            <section class="gauge-card">
+                <div class="gauge-ring">
+                    <div class="inner-circle">
+                        <div id="rpmValue">0</div>
+                        <div class="unit">RPM</div>
+                    </div>
                 </div>
-                <div class="progress-ring"></div>
-            </div>
+                <div class="max-box">
+                    <span>MAX RPM</span>
+                    <strong id="maxValue">0</strong>
+                </div>
+            </section>
 
-            <button id="connectBtn" class="btn-neon">
-                <span>CONNETTI LAUNCHER</span>
-            </button>
+            <button id="connectBtn" class="btn-neon">CONNETTI LAUNCHER</button>
+            <button id="resetBtn" class="btn-reset" disabled>RESET MAX</button>
 
             <div class="input-card">
-                <input type="text" id="noteInput" placeholder="NOME BEY O NOTA...">
+                <input type="text" id="noteInput" maxlength="40" placeholder="NOME BEY O NOTA..." autocomplete="off">
                 <button id="saveBtn" class="btn-save" disabled>SALVA RECORD</button>
             </div>
 
             <section class="history-container">
-                <h3>CRONOLOGIA BATTAGLIE</h3>
+                <div class="section-title">
+                    <h3>CRONOLOGIA BATTAGLIE</h3>
+                    <span id="recordCount">0</span>
+                </div>
                 <div id="historyList"></div>
+                <div id="emptyHistory" class="empty-history">Nessun record salvato.</div>
             </section>
         </main>
 
