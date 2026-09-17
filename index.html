@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0a0b10">
-    <meta name="description" content="Beyblade X RPM Counter via ESP32-C3 BLE">
+    <meta name="description" content="Beyblade X RPM Counter via ESP32-C3 BLE o USB">
     <title>RPMcounterX</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
@@ -31,7 +31,11 @@
                 </div>
             </section>
 
-            <button id="connectBtn" class="btn-neon">CONNETTI LAUNCHER</button>
+            <div class="connection-buttons">
+                <button id="connectBtn" class="btn-neon">📡 BLUETOOTH</button>
+                <button id="serialBtn" class="btn-usb">🔌 USB PC</button>
+            </div>
+            <div id="connectionHint" class="connection-hint">Bluetooth: Chrome/Edge su PC o Android · USB: Chrome/Edge su PC</div>
             <button id="resetBtn" class="btn-reset" disabled>RESET MAX</button>
 
             <div class="input-card">
