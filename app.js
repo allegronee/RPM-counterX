@@ -4,6 +4,10 @@ const RPM_UUID = '12345678-1234-1234-1234-1234567890ac';
 const COMMAND_UUID = '12345678-1234-1234-1234-1234567890ad';
 const DEVICE_NAME = 'Beyblade RPM';
 
+// Display/measurement range. The ESP32 deliberately does not clamp RPM.
+const DISPLAY_MAX_RPM = 40000;
+const DISPLAY_UPDATE_MS = 50;
+
 let device = null;
 let rpmChar = null;
 let commandChar = null;
@@ -12,6 +16,9 @@ let serialReader = null;
 let serialKeepReading = false;
 let currentRpm = 0;
 let maxRpm = 0;
+let lastDisplayMs = 0;
+let pendingRpm = null;
+let pendingMax = null;
 
 const rpmEl = document.getElementById('rpmValue');
 const maxEl = document.getElementById('maxValue');
@@ -34,7 +41,7 @@ function setConnectedUi(connected) {
     resetBtn.disabled = !connected;
 }
 
-function updateDisplay(rpm, maxFromDevice = null) {
+function drawDisplay(rpm, maxFromDevice = null) {
     currentRpm = Math.max(0, Math.round(Number(rpm) || 0));
     rpmEl.textContent = currentRpm.toLocaleString('it-IT');
 
@@ -48,6 +55,19 @@ function updateDisplay(rpm, maxFromDevice = null) {
     rpmEl.classList.remove('pulse');
     void rpmEl.offsetWidth;
     rpmEl.classList.add('pulse');
+}
+
+function updateDisplay(rpm, maxFromDevice = null) {
+    pendingRpm = rpm;
+    if (maxFromDevice !== null) pendingMax = maxFromDevice;
+
+    const now = performance.now();
+    if (now - lastDisplayMs >= DISPLAY_UPDATE_MS) {
+        lastDisplayMs = now;
+        drawDisplay(pendingRpm, pendingMax);
+        pendingRpm = null;
+        pendingMax = null;
+    }
 }
 
 function parseData(text) {
@@ -74,7 +94,7 @@ function onRpmNotification(event) {
 
 async function connectLauncher() {
     if (!navigator.bluetooth) {
-        alert('Web Bluetooth non disponibile. Su PC usa Chrome o Edge aggiornato. In alternativa usa USB PC.');
+        alert('Web Bluetooth non disponibile. Su PC usa Chrome o Edge aggiornato, oppure USB PC.');
         return;
     }
 
@@ -197,22 +217,6 @@ async function resetMax() {
         console.error(err);
         alert('Impossibile inviare il RESET.');
     }
-}
-
-async function disconnectSerial() {
-    serialKeepReading = false;
-    try {
-        if (serialReader) await serialReader.cancel();
-    } catch (_) {}
-    try {
-        if (serialPort) await serialPort.close();
-    } catch (_) {}
-    serialReader = null;
-    serialPort = null;
-    serialBtn.disabled = false;
-    serialBtn.textContent = '🔌 USB PC';
-    setStatus('DISCONNESSO');
-    setConnectedUi(false);
 }
 
 saveBtn.addEventListener('click', () => {
